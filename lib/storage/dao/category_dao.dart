@@ -1,9 +1,7 @@
-
-import 'package:sqflite/sqflite.dart';
+import 'package:moor_ffi/database.dart';
 
 import '../app_storage.dart';
 import '../po/category_po.dart';
-
 
 //"""
 // CREATE TABLE IF NOT EXISTS category(
@@ -19,12 +17,11 @@ import '../po/category_po.dart';
 //""";
 
 class CategoryDao {
-  final  AppStorage storage;
+  final AppStorage storage;
 
   CategoryDao(this.storage);
 
-  Future<Database> get _db async =>await storage.db;
-
+  Future<Database> get _db async => await storage.db;
 
   Future<int> insert(CategoryPo widget) async {
     //插入方法
@@ -33,15 +30,17 @@ class CategoryDao {
         "INSERT INTO "
         "category(name,color,info,priority,image,created,updated) "
         "VALUES (?,?,?,?,?,?,?);";
-    return await db.transaction((tran) async => await tran.rawInsert(addSql, [
-          widget.name,
-          widget.color,
-          widget.info,
-          widget.priority,
-          widget.image,
-          widget.created.toIso8601String(),
-          widget.updated.toIso8601String(),
-        ]));
+
+    db.prepare(addSql).execute([
+      widget.name,
+      widget.color,
+      widget.info,
+      widget.priority,
+      widget.image,
+      widget.created.toIso8601String(),
+      widget.updated.toIso8601String(),
+    ]);
+    return 1;
   }
 
   Future<int> update(CategoryPo widget) async {
@@ -50,9 +49,7 @@ class CategoryDao {
     String updateSql = //插入数据
         "UPDATE category SET name=? , color=? ,info=?, priority=?,image=?,updated=? "
         "WHERE id = ?";
-
-    return await db.transaction((tran) async =>
-    await tran.rawUpdate(updateSql, [
+    db.prepare(updateSql).execute([
       widget.name,
       widget.color,
       widget.info,
@@ -60,30 +57,32 @@ class CategoryDao {
       widget.image,
       widget.updated.toIso8601String(),
       widget.id,
-    ]));
+    ]);
+    return 1;
   }
 
-
-
-  Future<int> addWidget(int categoryId,int widgetId,) async {
+  Future<int> addWidget(
+    int categoryId,
+    int widgetId,
+  ) async {
     final db = await _db;
     String addSql = //插入数据
         "INSERT INTO "
         "category_widget(widgetId,categoryId) "
         "VALUES (?,?);";
-    return await db.transaction((tran) async => await tran.rawInsert(addSql, [
+    db.prepare(addSql).execute([
       widgetId,
       categoryId,
-    ]));
+    ]);
+    return 1;
   }
-
 
   Future<bool> existByName(String name) async {
     final db = await _db;
     String sql = //插入数据
         "SELECT COUNT(name) as count FROM category "
         "WHERE name = ?";
-    var rawData = await db.rawQuery(sql, [name]);
+    var rawData = db.prepare(sql).select([name]).toList();
     if (rawData.length > 0) {
       return rawData[0]['count'] > 0;
     }
@@ -92,38 +91,35 @@ class CategoryDao {
 
   Future<List<Map<String, dynamic>>> queryAll() async {
     final db = await _db;
-    var data = await db.rawQuery(
+    var querySql =
         "SELECT c.id,c.name,c.info,c.color,c.image,c.created,c.updated,c.priority,COUNT(cw.categoryId) as `count`"
-            "FROM category AS c "
-            "LEFT JOIN category_widget AS cw "
-            "ON c.id = cw.categoryId GROUP BY c.id "
-            "ORDER BY priority DESC,created DESC",
-        []);
-    print(data);
-    return data;
+        "FROM category AS c "
+        "LEFT JOIN category_widget AS cw "
+        "ON c.id = cw.categoryId GROUP BY c.id "
+        "ORDER BY priority DESC,created DESC";
+    var rawData = db.prepare(querySql).select().toList();
+    return rawData;
   }
 
   Future<List<int>> categoryWidgetIds(int id) async {
     final db = await _db;
-    var data = await db.rawQuery(
-        "SELECT categoryId FROM `category_widget`"
-            "WHERE widgetId = ?",
-        [id]);
-    return data.toList().map<int>((e)=>e["categoryId"]).toList();
+    var data = await db.prepare(
+        "SELECT categoryId FROM category_widget "
+        "WHERE widgetId = ?").select([id]);
+    return data.toList().map<int>((e) => e["categoryId"]).toList();
   }
-
-
 
   Future<void> deleteCollect(int id) async {
     final db = await _db;
-    await db.execute(
+    await db.prepare(
         "DELETE FROM category_widget "
-            "WHERE categoryId = ?",
-        [id]);
-    return await db.execute(
+        "WHERE categoryId = ?",
+        ).execute([id]);
+    await db.prepare(
         "DELETE FROM category "
-            "WHERE id = ?",
-        [id]);
+        "WHERE id = ?",
+       ).execute( [id]);
+    return 0;
   }
 
   Future<int> removeWidget(int categoryId, int widgetId) async {
@@ -132,11 +128,11 @@ class CategoryDao {
     String deleteSql = //插入数据
         "DELETE FROM "
         "category_widget WHERE categoryId = ? AND widgetId = ? ";
-    return await db
-        .transaction((tran) async => await tran.rawInsert(deleteSql, [
+     await db.prepare(deleteSql).execute( [
       categoryId,
       widgetId,
-    ]));
+    ]);
+      return 1;
   }
 
   Future<bool> existWidgetInCollect(int categoryId, int widgetId) async {
@@ -144,7 +140,7 @@ class CategoryDao {
     String sql = //插入数据
         "SELECT COUNT(id) as count FROM category_widget "
         "WHERE categoryId = ? AND widgetId = ?";
-    var rawData = await db.rawQuery(sql, [categoryId, widgetId]);
+    var rawData = await db.prepare(sql).select( [categoryId, widgetId]).toList();
     if (rawData.length > 0) {
       return rawData[0]['count'] > 0;
     }
@@ -164,14 +160,13 @@ class CategoryDao {
     await toggleCollect(1, widgetId);
   }
 
-  Future<List<Map<String, dynamic>>> loadCollectWidgets(int categoryId) async{
+  Future<List<Map<String, dynamic>>> loadCollectWidgets(int categoryId) async {
     String querySql = //插入数据
         "SELECT * FROM widget "
         "WHERE id IN (SELECT widgetId FROM category_widget WHERE categoryId = ?) "
         "ORDER BY lever DESC";
 
     final db = await _db;
-    return await db.rawQuery(querySql,[categoryId]);
-
+    return await db.prepare(querySql).select( [categoryId]).toList();
   }
 }

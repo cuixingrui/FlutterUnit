@@ -26,9 +26,20 @@ dependencies:
   cupertino_icons: ^0.1.2
   sqflite: ^1.2.1 #数据库
   toggle_rotate: ^0.0.5
+  moor_ffi: ^0.7.0
+
+  path_provider: ^1.6.11
+  path_provider_fde:
+    path: ./plugins/path_provider_fde
+
+  window_size:
+    path: ./plugins/window_size
+
   flutter_star: ^0.1.2 # 星星组件
   shared_preferences: ^0.5.6+3 # xml 固化
   url_launcher: ^5.4.2 # url
+  url_launcher_fde:
+    path: ./plugins/url_launcher_fde
   intl: ^0.16.1 # 格式化
   share: ^0.6.3+6
 dev_dependencies:

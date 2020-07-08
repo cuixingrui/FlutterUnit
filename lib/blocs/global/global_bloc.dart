@@ -20,7 +20,7 @@ class GlobalBloc extends Bloc<GlobalEvent, GlobalState> {
 
   GlobalBloc(this.storage);
 
-  Future<SharedPreferences> get sp => storage.sp;
+//  Future<SharedPreferences> get sp => storage.sp;
 
   @override
   Stream<GlobalState> mapEventToState(GlobalEvent event) async* {
@@ -30,33 +30,33 @@ class GlobalBloc extends Bloc<GlobalEvent, GlobalState> {
 
     if (event is EventSwitchFontFamily) {
       var familyIndex = Cons.fontFamilySupport.indexOf(event.family);
-      await sp
-        ..setInt(SP.fontFamily, familyIndex); //固化数据
+//      await sp
+//        ..setInt(SP.fontFamily, familyIndex); //固化数据
       yield state.copyWith(fontFamily: event.family);
     }
 
     if (event is EventSwitchThemeColor) {
       var themeIndex =
           Cons.themeColorSupport.keys.toList().indexOf(event.color);
-      await sp
-        ..setInt(SP.themeColorIndex, themeIndex); //固化数据
+//      await sp
+//        ..setInt(SP.themeColorIndex, themeIndex); //固化数据
       yield state.copyWith(themeColor: event.color);
     }
 
     if (event is EventSwitchShowBg) {
-      await sp
-        ..setBool(SP.showBackground, event.show); //固化数据
+//      await sp
+//        ..setBool(SP.showBackground, event.show); //固化数据
       yield state.copyWith(showBackGround: event.show);
     }
 
     if (event is EventSwitchCoderTheme) {
-      await sp
-        ..setInt(SP.codeStyleIndex, event.codeStyleIndex); //固化数据
+//      await sp
+//        ..setInt(SP.codeStyleIndex, event.codeStyleIndex); //固化数据
       yield state.copyWith(codeStyleIndex: event.codeStyleIndex);
     }
     if (event is EventChangeItemStyle) {
-      await sp
-        ..setInt(SP.itemStyleIndex, event.index); //固化数据
+//      await sp
+//        ..setInt(SP.itemStyleIndex, event.index); //固化数据
       print('EventChangeItemStyle+${event.index}');
       yield state.copyWith(itemStyleIndex: event.index);
     }
